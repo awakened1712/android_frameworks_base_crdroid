@@ -103,13 +103,8 @@ public class BluetoothTile extends QSTileImpl<BooleanState> {
     }
 
     @Override
-    protected void handleLongClick(@Nullable View view) {
-        mHandler.post(() -> mBluetoothDialogFactory.create(true, view));
-    }
-
-    @Override
     public Intent getLongClickIntent() {
-        return null;
+        return new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
     }
 
     @Override
