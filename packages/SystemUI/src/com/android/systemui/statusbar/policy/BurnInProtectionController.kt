@@ -104,9 +104,7 @@ class BurnInProtectionController @Inject constructor(
             maxNavBarShiftY = if (isGesturalMode()) {
                 getDimensionPixelSize(R.dimen.navigation_handle_bottom) / 3
             } else {
-                val frameHeight = getDimensionPixelSize(R.dimen.navigation_bar_height)
-                val buttonHeight = getDimensionPixelSize(R.dimen.navigation_icon_size)
-                (frameHeight - buttonHeight) / 3
+                0
             }
         }
         logD {
