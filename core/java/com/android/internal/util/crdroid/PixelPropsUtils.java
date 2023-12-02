@@ -22,12 +22,21 @@ import android.os.Build;
 import android.os.SystemProperties;
 import android.util.Log;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+
+import org.json.JSONObject;
 
 public class PixelPropsUtils {
 
@@ -388,28 +397,50 @@ public class PixelPropsUtils {
         }
     }
 
-    private static void setVersionFieldString(String key, String value) {
-        try {
-            if (DEBUG) Log.d(TAG, "Defining prop " + key + " to " + value);
-            Field field = Build.VERSION.class.getDeclaredField(key);
-            field.setAccessible(true);
-            field.set(null, value);
-            field.setAccessible(false);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            Log.e(TAG, "Failed to set prop " + key, e);
+    public static String getFileContents(String path) throws IOException {
+        File file = new File(path);
+        final InputStream inputStream = new FileInputStream(file);
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
+        final StringBuilder stringBuilder = new StringBuilder();
+
+        boolean done = false;
+
+        while (!done) {
+            final String line = reader.readLine();
+            done = (line == null);
+
+            if (line != null) {
+                stringBuilder.append(line);
+            }
         }
+
+        reader.close();
+        inputStream.close();
+
+        return stringBuilder.toString();
     }
 
     private static void spoofBuildGms() {
-        // Alter build parameters to avoid hardware attestation enforcement
-        setPropValue("BRAND", "YU nitrogen");
-        setPropValue("MANUFACTURER", "YU");
-        setPropValue("DEVICE", "YUREKA");
-        setPropValue("ID", "LMY49J");
-        setPropValue("FINGERPRINT", "YU/YUREKA/YUREKA:5.1.1/LMY49J/YOG4PAS8A4:user/release-keys");
-        setPropValue("MODEL", "YU5510");
-        setPropValue("PRODUCT", "YUREKA");
-        setVersionFieldString("SECURITY_PATCH", "2015-11-01");
+        try {
+            String jsonString = getFileContents("/data/local/tmp/props.json");
+            JSONObject jsonObject = new JSONObject(jsonString);
+
+            JSONObject props = jsonObject.getJSONObject("PROPS");
+            Iterator<String> keys = props.keys();
+            while(keys.hasNext()) {
+                String key = keys.next();
+                setPropValue(key, props.get(key).toString());
+            }
+
+            JSONObject version = jsonObject.getJSONObject("VERSION");
+            keys = props.keys();
+            while(keys.hasNext()) {
+                String key = keys.next();
+                setVersionField(key, version.get(key).toString());
+            }
+        }
+        catch (Exception e) { }
     }
 
     private static boolean isCallerSafetyNet() {
