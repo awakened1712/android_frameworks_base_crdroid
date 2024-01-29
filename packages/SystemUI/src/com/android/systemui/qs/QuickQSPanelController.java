@@ -87,7 +87,6 @@ public class QuickQSPanelController extends QSPanelControllerBase<QuickQSPanel>
     @Override
     protected void onInit() {
         super.onInit();
-        updateConfig();
         updateMediaExpansion();
         mMediaHost.setShowsOnlyActiveMedia(true);
         mMediaHost.init(MediaHierarchyManager.LOCATION_QQS);
@@ -121,8 +120,6 @@ public class QuickQSPanelController extends QSPanelControllerBase<QuickQSPanel>
         mTunerService.addTunable(mView, QSPanel.QS_TILE_ANIMATION_STYLE);
         mTunerService.addTunable(mView, QSPanel.QS_TILE_ANIMATION_DURATION);
         mTunerService.addTunable(mView, QSPanel.QS_TILE_ANIMATION_INTERPOLATOR);
-        mTunerService.addTunable(mView, QSPanel.QS_LAYOUT_COLUMNS);
-        mTunerService.addTunable(mView, QSPanel.QS_LAYOUT_COLUMNS_LANDSCAPE);
 
         mView.setBrightnessRunnable(() -> {
             mView.updateResources();
@@ -163,6 +160,11 @@ public class QuickQSPanelController extends QSPanelControllerBase<QuickQSPanel>
         return mView.isListening();
     }
 
+    private void setMaxTiles(int parseNumTiles) {
+        mView.setMaxTiles(parseNumTiles);
+        setTiles();
+    }
+
     @Override
     public void refreshAllTiles() {
         mBrightnessController.checkRestrictionAndSetEnabled();
@@ -171,7 +173,11 @@ public class QuickQSPanelController extends QSPanelControllerBase<QuickQSPanel>
 
     @Override
     protected void onConfigurationChanged() {
-        updateConfig();
+        int newMaxTiles = getResources().getInteger(R.integer.quick_qs_panel_max_tiles);
+        newMaxTiles = TileUtils.getQSColumnsCount(getContext(), newMaxTiles);
+        if (newMaxTiles != mView.getNumQuickTiles()) {
+            setMaxTiles(newMaxTiles);
+        }
         updateMediaExpansion();
     }
 
@@ -185,14 +191,6 @@ public class QuickQSPanelController extends QSPanelControllerBase<QuickQSPanel>
             }
         }
         super.setTiles(tiles, /* collapsedView */ true);
-    }
-
-    private void updateConfig() {
-        int maxTiles = getResources().getInteger(R.integer.quick_qs_panel_max_tiles);
-        int columns = getResources().getInteger(R.integer.quick_settings_num_columns);
-        columns = TileUtils.getQSColumnsCount(getContext(), columns);
-        mView.setMaxTiles(Math.max(columns, maxTiles));
-        setTiles();
     }
 
     public void setContentMargins(int marginStart, int marginEnd) {
